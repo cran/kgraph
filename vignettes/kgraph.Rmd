@@ -1,0 +1,214 @@
+---
+title: "Knowledge Graphs"
+author: "Thomas Charlon"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Knowledge Graphs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Knowledge graphs
+
+## Background
+
+Knowledge graphs enable to organize vast amounts of knowledge and has been used extensively on internet to help websites share data and integrate one another. In the domain of research and knowledge discovery, they enable to organise results and provide specific views of results by showing subsets of interest.
+
+Knowledge graphs are defined by sets of nodes in relationships to each other (and in the contexts of graphs, relationships between nodes can be called edges). Both nodes and edges can be of different types and one commonly used type of relationship is "parent-child", e.g. in the context of mental health, one such relationship could be: schizophrenia "is a" mental health disorder. This is an example of a directed relationship, and examples of undirected relationships include pair-wise similarities as cosine.
+
+The 'kgraph' package provides the ability to easily build knowledge graphs and feed them for visualization to the 'sgraph' package. The 'kgraph' package focuses on building the complex graphs that arise when we build knowledge graphs, with a particular focus on clinical and biomedical data, although the methods aim to be general enough for use in any application. The 'sgraph' package focuses on interfacing the Sigma.JS library and performs minimal computation. 
+
+There are three main computations performed by the 'kgraph' package:
+
+* Building a knowledge graph using specified relationships and edges
+* Determining a similarity threshold from a complete pair-wise similarity matrix or from an embedding matrix
+* Measuring the performance of a prediction model using known pairs
+
+## Features overview
+
+The two main features provided by the kgraph package are building a knowledge graph based on a data frame of concept relationships, be it p-values or cosine similarities, and building the data frame of concept relationships from an embedding matrix, the second feature thus operating logically before the first one. The user can either provide a direct data frame of weighted relationships, as p-values or pre-computed similarities, to the `build_kgraph` function, or provide a data matrix on which the similarities will be directly computed and a threshold will be determined, to the `fit_embeds_kg` function.
+
+## Building graphs using specificied relationships
+
+### Minimal call
+
+The first way to use the 'kgraph' package is to call the `build_kgraph` function with a list of selected concepts and a data frame consisting of 3 columns: 'concept1', 'concept2' and 'weight'. The two first columns will define 2 nodes in relationship, and the third defines the weight of the relationship, making the length of the edge globally shorter as the weight is higher. Thus when using p-values, one should first transform the values by minus log10 to reflect the stronger association.
+
+In the case of a graph with a single node of interest, the `df_weights` dataframe will be searched for all rows containing the selected node, and the weight of the relationship will be proportional to the size of the node of the second concept. For graphs with multiple nodes of interest, graphs for each node taken individually will first be built, and the graphs will then be merged. For nodes connected to several nodes of interest, the maximum of the weights to each node of interest is retained to determine the final node size.
+
+#### Data preparation
+
+As an example of a concepts relationships dataframe, the 'kgraph' package integrates GWAS results on suicide behavior downloaded from [https://www.ebi.ac.uk/gwas/efotraits/EFO_0007623](https://www.ebi.ac.uk/gwas/efotraits/EFO_0007623).
+
+In the `scripts` folder of the package, the file `gwas_data.R` creates an `rda` file based on it, which we load here.
+
+```{r}
+  library(kgraph)
+  data('df_pval')
+  head(df_pval)
+```
+
+#### Building the igraph object
+
+We can then call directly the `build_kgraph` function:
+
+```{r}
+  kg_obj = build_kgraph('EFO_0007623', df_pval)              
+```
+
+The `kg_obj` object returned by `build_kgraph` is a classic graph object consisting of two dataframes: one defining the edges (`df_links`) and one defining the nodes (`df_nodes`). We can then import this graph object as an 'igraph' object with the `l_graph_to_igraph` function from the 'sgraph' package, which is basically just a wrapper to the `graph_from_data_frame` from the 'igraph' package, and adds directly the node dataframe to the 'igraph' object.
+
+```{r}
+  ig_obj = sgraph::l_graph_to_igraph(kg_obj)
+```
+
+#### Visualization with Sigma.js
+
+We then build the 'sgraph' object from the 'igraph' object with the  `sgraph_clusters` function from the 'sgraph' package. Here we can specify the layout of the 'igraph' object, in this example a spring layout, but possibly also a force-directed layout with the `layout_with_fr`, or any other 'igraph' layouts. We can also modify some layout parameters, e.g. the number of iterations.
+
+```{r}
+  sg_obj = sgraph::sgraph_clusters(ig_obj, node_size = 'weight',
+                                   label = 'label',
+                                   layout = igraph::layout_with_kk(ig_obj))
+```
+
+The 'sgraph' object is now ready to be visualized
+
+```{r}
+  sg_obj
+```
+
+### Providing a dictionary
+
+Most of the time, we will want to integrate and overlay data from a second data frame: the node dictionary. This data frame will contain at minimum the columns 'id' (corresponding to concept names in 'concept1' and 'concept2' columns of the weights data frame) and 'desc' (the textual descriptions, i.e. labels, that will appear on the graph). Optionally, the data frame can contain the columns 'color' (for nodes' color) and 'group' (detailed below).
+
+The script `gwas_data.R` builds a basic dictionary that will map the traits' URI to labels, and SNPs to genes. We load directly the `.rda` file here.
+
+```{r}
+  data('df_pval_dict')
+  head(df_pval_dict)
+```
+
+Then call `build_kgraph` with the `df_dict` parameter.
+
+```{r}
+  kg_obj = build_kgraph('EFO_0007623', df_pval, df_dict = df_pval_dict)              
+```
+
+The `get_sgraph` function is a wrapper to build the 'igraph' and 'sgraph' objects, and the `...` parameter is passed to the `sgraph_clusters` function.
+
+```{r}
+  sg_obj = get_sgraph(kg_obj)
+  sg_obj
+```
+
+#### Multiple nodes
+
+We can specify multiple nodes of interest to see which SNPs are associated with several phenotypes.
+
+```{r}
+  kg_obj = build_kgraph(c('EFO_0007623', 'EFO_0007624'), df_pval, df_pval_dict)
+
+  sg_obj = get_sgraph(kg_obj)
+  sg_obj
+```
+
+### Groupings
+
+The node dictionary dataframe can include a 'group' column, which will add groups as nodes in the graph. There is two main ways of displaying groups in the 'kgraph' package, and each should be used with a specific graph layout from the 'igraph' package for best results.
+
+In the first case ('floating'), the group nodes will be connected to all nodes belonging to each group and should be used with the `layout_with_kk` layout function, which will have the effect of pulling together nodes from similar groups while keeping their direct relationships to nodes of interest.
+
+In the second case ('anchored'), nodes' direct edges to concepts of interest will be removed and group nodes will be connected to concepts of interest instead. This layout should be used with the `layout_with_fr` function (force-directed), which will have the effect of using the groups as intermediary nodes. Additionally, nodes in a group can be hidden by default and revealed only when the group node is clicked upon. 
+
+Groups with a single child node will automatically by set to a common group labeled 'Other'. This behavior can be disabled by setting the `rm_single_groups` parameter to false, and the label can be replaced through the `display_val_str` parameter.
+
+In this vignette, we focus only on the first case, although functions are available to use the second type for users who want to explore that path. The second type might be demonstrated in a second vignette with other features in development.
+
+## Building a fit object from a data matrix
+
+### Overview
+
+Up to here, the dataframes we provided defined all the nodes' relationships, i.e. the edges. One useful additonal feature is to be able to determine automatically such relationships based on either a pair-wise similarity matrix, or an embedding matrix derived from co-occurence in sliding windows or other methods.
+
+In order to do this, we need to determine a similarity threshold, and define all similarities greater than the threshold as relationships. If our number of features isn't too big we can compute all pair-wise similarities and keep only the 5% or 10% greatest values. Otherwise if our number of features is large and we can't compute all pair-wise similarities, we can usually assume that most of our concepts are not related, thus we can generate a number of random pairs (e.g. 10,000) and assume they are all true negatives, and use them to determine a 5% or 10% false positive threshold. Then, when we build a knowledge graph, we compute pair-wise similarities between the concepts of interest and all the other concepts, and we use this global threshold to retain only the concepts with a higher similarity.
+
+#### Pair-wise similarities
+
+To determine this threshold from a data matrix, we call the `fit_embeds_kg` function, presumably on an embedding matrix with concepts as rows and dimensions as columns. Similarity method may vary and will usually be either the inner product or the cosine similarity, and two other methods are available. Threshold determining will usually be around 5% or 10% false positives (i.e. 0.95 or 0.9 specificity) but may be anywhere between 1% and 50% depending on the structure of the data (if many concepts are similar or not) and how the user wants to visualize the graph.
+
+Depending on the number of concepts in the data matrix (i.e. number of rows) and the amount of available RAM, it may not be possible to compute all pair-wise similarities in order to after be able to select nodes of interest. In that case pair-wise similarities for concepts of interest are computed on the fly and the `fit_embeds_kg` function is mainly used to determine the threshold. Otherwise if all pair-wise similarities can be computed, the fitted object contains the complete dataframe of weighted relationships.
+
+The 'on-the-fly' computation is performed by the `project_graph` function, and the `build_kgraph_from_fit` function enables to dispatch automatically between the two behaviors. The maximum number of concepts above which 'on-the-fly' computation is performed is determined by the `max_concepts` parameter, by default 1000, which is quite low and should thus run easily on modest systems and enable concurrent applications. Since the number of nodes of interest is rarely above 100, the 'on-the-fly' computation should still be near instantaneous and barely noticeable.
+
+#### Similarity threshold
+
+The threshold determining can vary depending on the random sampling performed. By default ~10,000 random pairs are sampled, and this number can be increased with the `n_notpairs` parameter. Increasing it will increase the computation time of the fitted object (but which is only performed once), and will increase the stability of the threshold and the resulting graph. The fitted object can then be reused to explore different nodes of interest, and is recomputed only when the similarity method or the threshold is changed.
+
+#### Example
+
+The 'kgraph' package provides an example embedding data matrix, which is a subset of a larger one hosted on [Dropbox](https://www.dropbox.com/scl/fi/v21zcpf59y6pk6te1hmoq/epmc_1700_glove_fit_nile.rds?rlkey=vxkstqcuk2hjpb8sy4syj9glh&dl=0) and in which embeddings of medical concepts have been computed in 1,700 mental health-related scientific publications using word2vec-like algorithms (co-occurence in sliding windows, in which pairs of words appearing frequently close together will be more similar). For more information on how this data was computed, you can refer to my [R/Medicine 2024 tutorial](https://gitlab.com/thomaschln/psychclust_rmed24).
+
+A corresponding dictionary object is also provided, that you can recreate by downloading the [NILE software](https://celehs.hms.harvard.edu/software/NILE.html) (for .edu, .org or .gov e-mail addresses only, please contact the CELEHS lab if you are an academic with another kind of e-mail address) and then extracting the file in the `portable_NILE` folder in `inst`.
+
+##### Building the fit object
+
+The input data is a matrix with concepts as rows and embedding dimensions in columns.
+
+```{r}
+  data('m_embeds')
+  dim(m_embeds)
+```
+
+We build the fit object to determine the similarity threshold. The 5% threshold is always computed for information, and the `threshold_projs` parameter determines the actual threshold that will be used, by default 10% (note that it is specified in AUC specificity, so 10% -> 0.9 and 5% -> 0.95).
+
+```{r}
+  fit_kg = fit_embeds_kg(m_embeds, 'cosine', threshold_projs = 0.9)
+  fit_kg$threshold_projs
+```
+
+##### Producing the knowledge graph
+
+We can then call the `build_kgraph_from_fit` function, with a node of interest. We first load the dictionary to find identifiers.
+
+```{r}
+  data('df_embeds_dict')
+  head(df_embeds_dict)
+```
+
+```{r}
+  target_nodes_idxs = grep('suicide', df_embeds_dict$desc) %>% head(2)
+  target_nodes = df_embeds_dict$id[target_nodes_idxs]
+
+  kg_obj = build_kgraph_from_fit(target_nodes, m_embeds, fit_kg,
+                                 df_dict = df_embeds_dict)
+
+  sg_obj = get_sgraph(kg_obj)
+  sg_obj
+```
+
+### Measuring performance using known pairs
+
+As we determine a similarity threshold from data matrices, we are basically predicting relationships between concepts. And of course, we would like to know about the performance of our prediction model. To obtain numeric quality measures, we can use databases of known related concepts, which act as true positives. In the clinical context, these databases can be curated by clinicians, and in the general context by expert knowledge. A useful performance measure for such predictions is AUC. AUC will require the same number of true negatives than of true positives, so for each pair of concept we know about, we want to generate a random other one.
+
+The 'kgraph' package integrates an extract of the [PrimeKG](https://github.com/mims-harvard/PrimeKG) database subsetted to PheCodes (diagnoses) relationships. PrimeKG was developed to help with bioinformatics drug discovery and focuses on genetic pathways, but we can use it as a starting point in a biomedical setting (focusing on relations between diagnoses). 
+
+To see the performance of our prediction model, we load the known pairs, recompute the fit object, and plot AUC.
+
+```{r}
+  data('df_cuis_pairs')
+
+  fit_kg = fit_embeds_kg(m_embeds, 'cosine', df_pairs = df_cuis_pairs[c(1, 3)])
+
+  pROC::plot.roc(fit_kg$roc, print.auc = TRUE)
+```
+
+
