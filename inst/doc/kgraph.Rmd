@@ -131,7 +131,20 @@ In the second case ('anchored'), nodes' direct edges to concepts of interest wil
 
 Groups with a single child node will automatically by set to a common group labeled 'Other'. This behavior can be disabled by setting the `rm_single_groups` parameter to false, and the label can be replaced through the `display_val_str` parameter.
 
-In this vignette, we focus only on the first case, although functions are available to use the second type for users who want to explore that path. The second type might be demonstrated in a second vignette with other features in development.
+
+<!--
+
+### Group display 1
+
+Usually using a spring layout
+
+### Group display 2
+
+Usually using a force-directed layout
+
+Child nodes are hidden by default and requires a click on the parent group node to make specific child nodes appear. This can be useful when merging data from different institutions.
+
+-->
 
 ## Building a fit object from a data matrix
 

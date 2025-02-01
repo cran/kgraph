@@ -19,8 +19,10 @@ Each row defines an association between a SNP and a phenotype. Downloaded
 from GWAS Catalog at https://www.ebi.ac.uk/gwas/efotraits/EFO_0007623.
 }
 \examples{
+\dontrun{
 data('df_pval')
 
 kg_obj = build_kgraph('EFO_0007623', df_pval)              
+}
 
 }

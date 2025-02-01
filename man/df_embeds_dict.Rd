@@ -18,6 +18,7 @@ Dataframe with columns id (for the CUI), desc (textual
 Each row corresponds to one rowname of m_embeds.
 }
 \examples{
+\dontrun{
 data('m_embeds')
 data('df_embeds_dict')
 
@@ -27,5 +28,6 @@ target_nodes = df_embeds_dict$id[target_nodes_idxs]
 
 kg_obj = build_kgraph_from_fit(target_nodes, m_embeds, fit_kg,
                                df_dict = df_embeds_dict)
+}
 
 }

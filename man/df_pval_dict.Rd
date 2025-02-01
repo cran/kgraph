@@ -19,9 +19,11 @@ Row IDs correspond to the identifiers found in columns concept1 and concept2
 of the df_pval object.
 }
 \examples{
+\dontrun{
 data('df_pval')
 data('df_pval_dict')
 
 kg_obj = build_kgraph(c('EFO_0007623', 'EFO_0007624'), df_pval, df_pval_dict)              
+}
 
 }

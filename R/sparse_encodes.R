@@ -1,5 +1,4 @@
 
-###############################################################################
 #' sparse_encode
 #'
 #' Sparse encoding method by closest neighbors. 
@@ -82,7 +81,6 @@ exp_transform <- function(vec, sigma) {
   vec / sum(vec)
 }
 
-##############################################################################
 #' dist_matrix
 #'
 #' Dispatch of amap::Dist, text2vec::sim2, and norm_inprod methods.
@@ -108,7 +106,6 @@ dist_matrix <- function(data, method = 'euclidean', n_cores = 1) {
     })
 }
 
-###############################################################################
 #' stddev_mean
 #'
 #' Get mean of standard deviations of matrix columns
@@ -124,7 +121,6 @@ stddev_mean <- function(m) {
 }
 
 
-###############################################################################
 #' norm_inprod 
 #'
 #' Normalized inner product with transposed input matrix
