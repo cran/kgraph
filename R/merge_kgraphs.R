@@ -49,6 +49,18 @@ merge_kgraphs = function(l_graphs, df_dict,
   # NOTE may need to recompute group weights for fixed nodes/links
   # although rare edge cases
 
+  # remove links from groups to target nodes
+  if ('clusters' %in% names(l_graph$df_nodes)) {
+
+    grps_subset = l_graph$df_nodes$clusters == 'Groups'
+
+    if (any(grps_subset)) {
+
+      groups = l_graph$df_nodes$id[grps_subset]
+      l_graph$df_links %<>% subset(!(from %in% groups & to %in% names(l_graphs)))
+    }
+  }
+
   l_graph %$% check_kgraph(df_nodes, df_links)
 }
 

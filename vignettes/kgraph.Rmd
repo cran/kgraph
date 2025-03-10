@@ -212,7 +212,7 @@ We can then call the `build_kgraph_from_fit` function, with a node of interest. 
 
 As we determine a similarity threshold from data matrices, we are basically predicting relationships between concepts. And of course, we would like to know about the performance of our prediction model. To obtain numeric quality measures, we can use databases of known related concepts, which act as true positives. In the clinical context, these databases can be curated by clinicians, and in the general context by expert knowledge. A useful performance measure for such predictions is AUC. AUC will require the same number of true negatives than of true positives, so for each pair of concept we know about, we want to generate a random other one.
 
-The 'kgraph' package integrates an extract of the [PrimeKG](https://github.com/mims-harvard/PrimeKG) database subsetted to PheCodes (diagnoses) relationships. PrimeKG was developed to help with bioinformatics drug discovery and focuses on genetic pathways, but we can use it as a starting point in a biomedical setting (focusing on relations between diagnoses). 
+The 'kgraph' package integrates an extract of the [PrimeKG](https://github.com/mims-harvard/PrimeKG) database [@chandak2022building] subsetted to PheCodes (diagnoses) relationships. PrimeKG was developed to help with bioinformatics drug discovery and focuses on genetic pathways, but we can use it as a starting point in a biomedical setting (focusing on relations between diagnoses). We filtered it on MONDO relationships [@vasilevsky2022mondo].
 
 To see the performance of our prediction model, we load the known pairs, recompute the fit object, and plot AUC.
 
@@ -225,3 +225,4 @@ To see the performance of our prediction model, we load the known pairs, recompu
 ```
 
 
+# References

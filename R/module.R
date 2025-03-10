@@ -148,7 +148,7 @@ kgraphServer = function(id, type) {
   
           df_input = validate_input_file(df_input)
 
-          get_pmi(df_input)
+          nlpembeds::get_pmi(df_input)
         })
 
       react_embeds <- reactive({
@@ -185,7 +185,7 @@ kgraphServer = function(id, type) {
               m_cooc = m_cooc[-rm_idxs, -rm_idxs]
             }
 
-            m_cooc = get_svd(m_cooc, svd_rank)
+            m_cooc = nlpembeds::get_svd(m_cooc, svd_rank)
  
             update_selectize(rownames(m_cooc), session)
 

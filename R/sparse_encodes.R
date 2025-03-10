@@ -34,9 +34,9 @@ sparse_encode <- function(m_data, dist_method = 'norm_inprod',
     stop('n_neighbors out of bounds')
   }
 
-  m_dist <- dist_matrix(m_data, dist_method)
+  m_dist <- opticskxi::dist_matrix(m_data, dist_method)
 
-  if (missing(sigma)) sigma <- stddev_mean(m_dist)
+  if (missing(sigma)) sigma <- opticskxi::stddev_mean(m_dist)
   if (sigma <= 0) stop('sigma must be strictly positive')
 
   sparse_encode_dist(m_dist, dist_method, encoding, sigma, n_neighbors)
@@ -51,9 +51,9 @@ sparse_encode_dist <- function(m_dist, dist_method, encoding, ...) {
   sp_enc <- apply(m_dist, 2, sparse_encode_vec, encoding, ...)
 
   if (encoding == 'epsilon') {
-    sp_enc <- norm_inprod(sp_enc)
+    sp_enc <- opticskxi::norm_inprod(sp_enc)
     sp_enc <- matrix(pmax(sp_enc - mean(sp_enc), 0), nrow(m_dist),
-      dimnames = list(rownames(m_dist), rownames(m_dist)))
+                     dimnames = list(rownames(m_dist), rownames(m_dist)))
   }
 
   sp_enc
@@ -70,7 +70,7 @@ sparse_encode_vec <- function(vec, encoding, sigma, n_neighbors) {
       neighbors <- utils::head(order(vec), n_neighbors)
       vec[-neighbors] <- 0
       vec[neighbors] <- switch(encoding, hard = 1,
-        soft = exp_transform(vec[neighbors], sigma))
+                               soft = exp_transform(vec[neighbors], sigma))
       vec
     })
 }
@@ -79,73 +79,4 @@ sparse_encode_vec <- function(vec, encoding, sigma, n_neighbors) {
 exp_transform <- function(vec, sigma) {
   vec <- exp( - vec / sigma)
   vec / sum(vec)
-}
-
-#' dist_matrix
-#'
-#' Dispatch of amap::Dist, text2vec::sim2, and norm_inprod methods.
-#'
-#' @param data    Rectangular numeric matrix [Observations, Features]
-#' @param method  Methods accepted by amap::Dist or cosine and norm_inprod
-#' @param n_cores Number of cores
-#' @return Dissimarility symmetric matrix
-#'
-#' @export
-dist_matrix <- function(data, method = 'euclidean', n_cores = 1) {
-
-  amap_methods <- c("euclidean", "maximum", "manhattan", "canberra",
-    "binary", "pearson", "correlation", "spearman", "kendall",
-    "abspearson", "abscorrelation")
-  methods <- c(amap_methods, 'cosine', 'norm_inprod')
-
-  if (!method %in% methods) stop('Invalid distance method')
-
-  switch(method, cosine = 1 - text2vec::sim2(data),
-    norm_inprod = -norm_inprod(data), {
-      as.matrix(amap::Dist(data, method, nbproc = n_cores))
-    })
-}
-
-#' stddev_mean
-#'
-#' Get mean of standard deviations of matrix columns
-#'
-#' @param m Numeric matrix
-#' @return Mean of standard deviations of matrix columns
-#'
-#' @export
-stddev_mean <- function(m) {
-  m <- as.matrix(m)
-  stopifnot(is.matrix(m) && is.numeric(m))
-  mean(sqrt(apply(m, 2, var)))
-}
-
-
-#' norm_inprod 
-#'
-#' Normalized inner product with transposed input matrix
-#'
-#' @param m Numeric matrix
-#' @return Numeric matrix
-#'
-#' @export
-norm_inprod <- function(m) {
-  m_inprod <- inprod(m - rowMeans(m))
-  m_inprod <- apply(m_inprod, 1, function(i) i / as.vector(sqrt(i %*% i)))
-  rownames(m_inprod) <- rownames(m)
-
-  m_inprod
-}
-
-# inner product
-inprod <- function(x, y) {
-  if (missing(y)) y = x
-  x %*% t(y)
-}
-
-
-cosine_simi = function(x, y) {
-    x = text2vec::normalize(x, norm = 'l2')
-    y = if (missing(y)) x else text2vec::normalize(y, norm = 'l2')
-    x %*% t(y)
 }

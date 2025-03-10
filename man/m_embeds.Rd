@@ -19,10 +19,8 @@ The embedding matrix has been fitted using Glove word
 Each row is the embedding vector of a CUI in 100 Glove dimensions.
 }
 \examples{
-\dontrun{
 data('m_embeds')
 
 fit_kg = fit_embeds_kg(m_embeds, 'cosine')
-}
 
 }

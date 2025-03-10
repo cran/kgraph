@@ -276,3 +276,9 @@ get_known_pairs = function() {
 
   df_pairs = subset(df_pairs, group == 'cui-cui')[c('code1', 'code2')]
 }
+
+# TODO export in opticskxi
+# inner product
+inprod <- function(x, y) {                                          if (missing(y)) y = x
+  x %*% t(y)
+}

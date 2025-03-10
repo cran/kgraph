@@ -1,16 +1,10 @@
-#' @importFrom amap Dist
-#' @importFrom bslib accordion accordion_panel card layout_sidebar nav_panel
-#'                   navset_card_underline sidebar
-#' @importFrom data.table fread
 #' @importFrom dplyr group_by summarize
-#' @importFrom grid grid.draw
-#' @importFrom htmltools tagList
 #' @importFrom igraph layout_with_kk
-#' @importFrom Matrix sparseMatrix summary
+#' @importFrom opticskxi cosine_simi dist_matrix norm_inprod stddev_mean
+#' @importFrom htmltools tagList
 #' @importFrom plyr rbind.fill
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom reshape2 melt
-#' @importFrom rsvd rsvd
 #' @importFrom sgraph convert_to_spring_weights get_color_map get_legend
 #'                    highlight_multiple_connected multiline_labels scale_graph
 #'                    sgraph_clusters
